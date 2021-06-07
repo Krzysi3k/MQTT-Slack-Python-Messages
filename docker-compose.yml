@@ -1,0 +1,69 @@
+version: "3.5"
+services:
+
+  mosquitto:
+    image: eclipse-mosquitto
+    container_name: mosquitto
+    ports:
+      - "1883:1883"
+    #  - "9001:9001"
+    networks:
+      - home
+    volumes:
+      - ./mosquitto:/mosquitto/config
+    restart: unless-stopped
+    depends_on:
+      - wireguard
+
+  wireguard:
+    image: ghcr.io/linuxserver/wireguard
+    container_name: wireguard
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Warsaw
+      - SERVERURL=your-duckdns-entry.org
+      - SERVERPORT=51820
+      - PEERS=1
+      - PEERDNS=8.8.8.8
+      - INTERNAL_SUBNET=10.13.13.0
+    volumes:
+      - ./wireguard/config:/config
+      - /lib/modules:/lib/modules
+    ports:
+      - 51820:51820/udp
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+    restart: unless-stopped
+
+  mqtt_tele:
+    build: ./mqtt_tele/
+    image: mqtt_tele
+    container_name: mqtt_tele
+    volumes:
+      - ./mqtt_tele/app:/app
+    network_mode: host
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    depends_on:
+      - mosquitto
+
+  mqtt_cmnd:
+    build: ./mqtt_cmnd/
+    image: mqtt_cmnd
+    container_name: mqtt_cmnd
+    volumes: 
+      - ./mqtt_cmnd/app:/app
+    network_mode: host
+    restart: unless-stopped
+    depends_on:
+      - mosquitto
+
+
+networks:
+  home:
+    name: home
