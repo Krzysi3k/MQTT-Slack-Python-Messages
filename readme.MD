@@ -1,4 +1,4 @@
-# MQTT Python Slack Automation
+# MQTT Python Slack Messages
 ## an example project how to use SLACK API and Python to handle MQTT messages
 
 ### Python packages used:
